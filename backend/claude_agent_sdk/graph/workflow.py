@@ -1,9 +1,9 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
-from backend.claude_agent_sdk.core.state import AgentState
-from backend.claude_agent_sdk.agents.manager import ManagerAgent
-from backend.claude_agent_sdk.agents.editor import EditorAgent
-from backend.claude_agent_sdk.agents.verifier import VerifierAgent
+from claude_agent_sdk.core.state import AgentState
+from claude_agent_sdk.agents.manager import ManagerAgent
+from claude_agent_sdk.agents.editor import EditorAgent
+from claude_agent_sdk.agents.verifier import VerifierAgent
 from langchain_core.messages import HumanMessage, AIMessage
 
 # Initialize Agents

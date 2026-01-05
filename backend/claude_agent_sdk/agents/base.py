@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, AssistantMessage, TextBlock
-from backend.claude_agent_sdk.core.state import AgentState
-from backend.claude_agent_sdk.core.llm import ModelRouter
+from claude_agent_sdk.core.state import AgentState
+from claude_agent_sdk.core.llm import ModelRouter
 
 class BaseAgent:
     def __init__(self, name: str, mcp_servers: Dict[str, Any], allowed_tools: List[str], system_prompt: str):

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from backend.claude_agent_sdk.graph.workflow import app as graph_app
-from backend.claude_agent_sdk.core.state import AgentState
+from claude_agent_sdk.graph.workflow import app as graph_app
+from claude_agent_sdk.core.state import AgentState
 from langchain_core.messages import HumanMessage
 import uuid
 import os

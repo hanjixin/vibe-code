@@ -1,5 +1,5 @@
-from backend.claude_agent_sdk.agents.base import BaseAgent
-from backend.claude_agent_sdk.tools.server import get_browser_server, get_planning_server
+from claude_agent_sdk.agents.base import BaseAgent
+from claude_agent_sdk.tools.server import get_browser_server, get_planning_server
 
 VERIFIER_PROMPT = """You are the Verifier Agent, responsible for quality assurance and testing.
 You are the "Eyes" of the system.

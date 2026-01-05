@@ -1,5 +1,5 @@
-from backend.claude_agent_sdk.agents.base import BaseAgent
-from backend.claude_agent_sdk.tools.server import get_planning_server
+from claude_agent_sdk.agents.base import BaseAgent
+from claude_agent_sdk.tools.server import get_planning_server
 
 MANAGER_PROMPT = """You are the Manager Agent, responsible for the overall coordination and planning of the software development task.
 Your goal is to understand the user's request, break it down into actionable steps, and delegate them to the Editor and Verifier agents.
