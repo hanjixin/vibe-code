@@ -1,5 +1,5 @@
-from claude_agent_sdk.agents.base import BaseAgent
-from claude_agent_sdk.tools.server import get_filesystem_server
+from agent_core.agents.base import BaseAgent
+from agent_core.tools.server import get_filesystem_server
 
 EDITOR_PROMPT = """You are the Editor Agent, responsible for writing code and managing files.
 You are the "Hands" of the system.

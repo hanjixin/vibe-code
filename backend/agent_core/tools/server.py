@@ -1,7 +1,7 @@
 from claude_agent_sdk import create_sdk_mcp_server
-from claude_agent_sdk.tools.filesystem import read_file, write_file, run_shell_command, list_directory, git_commit, git_reset
-from claude_agent_sdk.tools.browser import open_url, click_element, fill_form, take_screenshot, get_page_content
-from claude_agent_sdk.tools.planning import create_plan, delegate_task, search_web, report_status
+from agent_core.tools.filesystem import read_file, write_file, run_shell_command, list_directory, git_commit, git_reset
+from agent_core.tools.browser import open_url, click_element, fill_form, take_screenshot, get_page_content
+from agent_core.tools.planning import create_plan, delegate_task, search_web, report_status
 
 def get_filesystem_server():
     return create_sdk_mcp_server(

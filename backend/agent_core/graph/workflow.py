@@ -1,9 +1,9 @@
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
-from claude_agent_sdk.core.state import AgentState
-from claude_agent_sdk.agents.manager import ManagerAgent
-from claude_agent_sdk.agents.editor import EditorAgent
-from claude_agent_sdk.agents.verifier import VerifierAgent
+from langgraph.checkpoint.memory import MemorySaver
+from agent_core.core.state import AgentState
+from agent_core.agents.manager import ManagerAgent
+from agent_core.agents.editor import EditorAgent
+from agent_core.agents.verifier import VerifierAgent
 from langchain_core.messages import HumanMessage, AIMessage
 
 # Initialize Agents
@@ -73,7 +73,7 @@ workflow.add_conditional_edges(
 )
 
 # Checkpointer
-memory = SqliteSaver(conn=sqlite3.connect(":memory:", check_same_thread=False))
+memory = MemorySaver()
 
 # Compile
 app = workflow.compile(checkpointer=memory)
