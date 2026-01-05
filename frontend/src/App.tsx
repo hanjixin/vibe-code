@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Bot, User, Terminal, Play, CheckCircle, GitBranch, Settings } from 'lucide-react';
+import { WorkspacePanel } from './components/WorkspacePanel';
 
 function App() {
   const [input, setInput] = useState('');
@@ -40,9 +41,9 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
+    <div className="flex h-screen bg-gray-900 text-white overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 p-4 border-r border-gray-700 flex flex-col">
+      <div className="w-64 bg-gray-800 p-4 border-r border-gray-700 flex flex-col shrink-0">
         <h1 className="text-xl font-bold mb-6 flex items-center gap-2">
           <Bot className="text-purple-400" />
           Claude Agent
@@ -87,7 +88,7 @@ function App() {
       </div>
 
       {/* Main Chat */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -140,6 +141,11 @@ function App() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Workspace Panel */}
+      <div className="w-[40%] h-full shrink-0">
+        <WorkspacePanel />
       </div>
     </div>
   );

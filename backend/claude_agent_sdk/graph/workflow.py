@@ -1,4 +1,5 @@
-from langgraph.graph import StateGraph, END, MemorySaver
+from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.sqlite import SqliteSaver
 from backend.claude_agent_sdk.core.state import AgentState
 from backend.claude_agent_sdk.agents.manager import ManagerAgent
 from backend.claude_agent_sdk.agents.editor import EditorAgent
@@ -72,7 +73,7 @@ workflow.add_conditional_edges(
 )
 
 # Checkpointer
-memory = MemorySaver()
+memory = SqliteSaver(conn=sqlite3.connect(":memory:", check_same_thread=False))
 
 # Compile
 app = workflow.compile(checkpointer=memory)
