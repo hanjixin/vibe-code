@@ -22,7 +22,10 @@ async def chat(request: ChatRequest):
     """
     Endpoint to interact with the Multi-Agent System.
     """
-    config = {"configurable": {"thread_id": request.thread_id}}
+    config = {
+        "configurable": {"thread_id": request.thread_id},
+        "recursion_limit": 100
+    }
     
     inputs = {
         "messages": [HumanMessage(content=request.message)],
