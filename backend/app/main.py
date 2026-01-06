@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from agent_core.graph.workflow import app as graph_app
 from agent_core.core.state import AgentState
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 import uuid
 import os
+import json
+import re
 
 app = FastAPI(title="Claude Code Agent SDK API")
 
@@ -16,6 +19,48 @@ class ChatRequest(BaseModel):
 class FileSaveRequest(BaseModel):
     path: str
     content: str
+
+def extract_content_from_event(event_value):
+    """从事件值中提取消息内容"""
+    try:
+        value_str = str(event_value)
+        
+        # 尝试直接提取 AIMessage content
+        aimessage_match = re.search(r"AIMessage\(content='([^']*)'", value_str)
+        if aimessage_match:
+            content = aimessage_match.group(1)
+            # 解码转义字符
+            content = content.replace('\\n', '\n').replace('\\"', '"').replace("\\'", "'")
+            return content
+        
+        # 尝试从 messages 数组中提取
+        if 'messages' in event_value and isinstance(event_value['messages'], list):
+            for msg in event_value['messages']:
+                if hasattr(msg, 'content'):
+                    return msg.content
+        
+        return value_str
+    except Exception:
+        return str(event_value)
+
+async def generate_events(request, use_post=True):
+    """生成 SSE 事件流"""
+    try:
+        async for event in graph_app.astream(request["inputs"], config=request["config"]):
+            for key, value in event.items():
+                content = extract_content_from_event(value)
+                event_data = {
+                    "node": key,
+                    "content": content
+                }
+                yield f"data: {json.dumps(event_data)}\n\n"
+        yield f"data: {json.dumps({'type': 'end'})}\n\n"
+    except Exception as e:
+        error_data = {
+            "type": "error",
+            "message": str(e)
+        }
+        yield f"data: {json.dumps(error_data)}\n\n"
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
@@ -33,18 +78,39 @@ async def chat(request: ChatRequest):
         "iteration_count": 0
     }
     
-    try:
-        # Stream the output
-        output = []
-        async for event in graph_app.astream(inputs, config=config):
-            for key, value in event.items():
-                output.append({
-                    "node": key,
-                    "content": str(value) # Serialize for JSON
-                })
-        return {"status": "success", "thread_id": request.thread_id, "trace": output}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    request_data = {"inputs": inputs, "config": config}
+    
+    return StreamingResponse(
+        generate_events(request_data),
+        media_type="text/event-stream"
+    )
+
+@app.get("/chat")
+async def chat_get(
+    message: str = Query(..., description="The user message"),
+    mode: str = Query("autonomy", description="The work mode"),
+    thread_id: str = Query(str(uuid.uuid4()), description="Thread ID")
+):
+    """
+    Endpoint to interact with the Multi-Agent System (GET for SSE).
+    """
+    config = {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": 100
+    }
+    
+    inputs = {
+        "messages": [HumanMessage(content=message)],
+        "mode": mode,
+        "iteration_count": 0
+    }
+    
+    request_data = {"inputs": inputs, "config": config}
+    
+    return StreamingResponse(
+        generate_events(request_data),
+        media_type="text/event-stream"
+    )
 
 @app.get("/health")
 def health_check():

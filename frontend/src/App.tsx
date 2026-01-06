@@ -1,43 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Send, Bot, User, Terminal, Play, CheckCircle, GitBranch, Settings } from 'lucide-react';
 import { WorkspacePanel } from './components/WorkspacePanel';
+import { Streamdown } from 'streamdown';
 
 function App() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('autonomy'); // 'autonomy', 'build', 'plan'
+  const [streaming, setStreaming] = useState(false);
 
-  const sendMessage = async () => {
+  const parseAgentContent = (content: string) => {
+    try {
+      const aimessageMatch = content.match(/AIMessage\(content='([^']+)'/s);
+      if (aimessageMatch && aimessageMatch[1]) {
+        let extractedContent = aimessageMatch[1];
+        extractedContent = extractedContent
+          .replace(/\\n/g, '\n')
+          .replace(/\\'/g, "'")
+          .replace(/\\"/g, '"')
+          .replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+        return extractedContent;
+      }
+      return content
+    } catch (error) {
+      console.error('Error parsing agent content:', error);
+    }
+    return content;
+  };
+
+  const sendMessage = () => {
     if (!input.trim()) return;
     
     const userMsg = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+    setStreaming(true);
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, mode: mode })
-      });
-      
-      const data = await response.json();
-      
-      // Process trace to extract agent responses
-      const agentResponses = data.trace.map((step: any) => ({
-        role: 'assistant',
-        agent: step.node,
-        content: step.content
-      }));
-      
-      setMessages(prev => [...prev, ...agentResponses]);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
+    const eventSource = new EventSource(
+      `/api/chat?message=${encodeURIComponent(input)}&mode=${mode}`
+    );
+
+    let buffer: any[] = [];
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'end') {
+          // End of stream
+          if (buffer.length > 0) {
+            setMessages(prev => [...prev, ...buffer]);
+            buffer = [];
+          }
+          setLoading(false);
+          setStreaming(false);
+          eventSource.close();
+        } else if (data.type === 'error') {
+          // Error
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `Error: ${data.message}`
+          }]);
+          setLoading(false);
+          setStreaming(false);
+          eventSource.close();
+        } else {
+          // Regular event
+          const agentMsg = {
+            role: 'assistant',
+            agent: data.node,
+            content: data.content
+          };
+          console.log(agentMsg)
+          buffer.push(agentMsg);
+          // Update UI immediately for real-time effect
+          setMessages(prev => [...prev, agentMsg]);
+          buffer = [];
+        }
+      } catch (error) {
+        console.error('Error parsing SSE event:', error);
+      }
+    };
+
+    eventSource.onerror = () => {
       setLoading(false);
-    }
+      setStreaming(false);
+      eventSource.close();
+    };
   };
 
   return (
@@ -106,7 +157,11 @@ function App() {
                     <Bot size={12} /> {msg.agent}
                   </div>
                 )}
-                <pre className="whitespace-pre-wrap font-sans text-sm">{msg.content}</pre>
+                {msg.role === 'assistant' ? (
+                  <Streamdown children={msg.content} />
+                ) : (
+                  <pre className="whitespace-pre-wrap font-sans text-sm">{msg.content}</pre>
+                )}
               </div>
             </div>
           ))}
@@ -131,10 +186,11 @@ function App() {
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder={`Type a message in ${mode} mode...`}
               className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500"
+              disabled={streaming}
             />
             <button 
               onClick={sendMessage}
-              disabled={loading}
+              disabled={loading || streaming || !input.trim()}
               className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />

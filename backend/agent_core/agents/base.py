@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, AssistantMessage, TextBlock
 from agent_core.core.state import AgentState
 from agent_core.core.llm import ModelRouter
+import shutil
 
 class BaseAgent:
     def __init__(self, name: str, mcp_servers: Dict[str, Any], allowed_tools: List[str], system_prompt: str):
@@ -11,33 +12,27 @@ class BaseAgent:
         self.system_prompt = system_prompt
         self.model_router = ModelRouter()
 
+    def _get_cli_path(self) -> str:
+        cli_path = shutil.which("claude") or shutil.which("claude-code")
+        if cli_path:
+            return cli_path
+        return "/usr/local/bin/claude"
+
     async def run(self, state: AgentState) -> str:
-        """
-        Runs the agent using Claude Agent SDK.
-        """
-        # Get the last user message or relevant context
         messages = state.get("messages", [])
         if not messages:
             return "No messages to process."
         
         last_message = messages[-1].content if hasattr(messages[-1], "content") else str(messages[-1])
 
-        # Determine model based on agent role
-        if self.name == "Manager":
-            model_name = self.model_router.get_model_name("reasoning")
-        elif self.name == "Editor":
-            model_name = self.model_router.get_model_name("coding")
-        else:
-            model_name = self.model_router.get_model_name("fast")
-
+        cli_path = self._get_cli_path()
+        
         options = ClaudeAgentOptions(
             system_prompt=self.system_prompt,
             mcp_servers=self.mcp_servers,
             allowed_tools=self.allowed_tools,
-            max_turns=10, # Limit turns for safety
-            # model=model_name # Note: Claude Agent SDK might not support 'model' param in options yet, checking docs...
-            # If SDK doesn't support model selection in options, it uses the CLI default.
-            # Assuming for now we rely on CLI default or environment variables.
+            max_turns=10,
+            cli_path=cli_path
         )
 
         response_text = ""
